@@ -1,0 +1,27 @@
+# 项目名称，用于生成日志路径
+project:
+  name: devops
+
+# 应用本身的配置，如端口号等
+app:
+  name: gotemplate
+  port: 8888
+
+# 应用日志配置
+log:
+  # 日志文件位置
+  # /service/logs/app/prod/${PROJECT_NAME}/${APP_NAME}/(debug.log|info.log|warn.log|error.log)
+  file: /service/logs/app
+  # 日志级别，本地测试时可以使用debug，生产一般使用info
+  level: info
+  # 日志文件大小，单位为M
+  maxsize: 100
+  # 日志文件最多保留多少天
+  max_age: 15
+  # 日志文件最多保留多少个
+  max_backup: 30
+  # 日志是否需要压缩存储，默认使用gzip压缩
+  compress: true
+  # 日志是否需要同步输出到屏幕，若为true，日志在写文件的时候，同时输出到屏幕
+  console_enable: false
+
