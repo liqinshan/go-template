@@ -5,31 +5,32 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"net/http"
+	"strings"
 	"time"
 )
 
-// 实现跨域处理
+// Cors 实现跨域处理
 func Cors() gin.HandlerFunc {
-	return func(context *gin.Context) {
-		method := context.Request.Method
+	return func(c *gin.Context) {
+		method := c.Request.Method
 		if method == "OPTIONS" {
-			context.AbortWithStatus(http.StatusNoContent)
+			c.AbortWithStatus(http.StatusNoContent)
 		}
 
-		origin := context.Request.Header.Get("Origin")
+		origin := c.Request.Header.Get("Origin")
 		if origin != "" {
-			context.Header("Access-Control-Allow-Origin", origin)
-			context.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
-			context.Header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
-			context.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Cache-Control, Content-Language, Content-Type")
-			context.Header("Access-Control-Allow-Credentials", "false")
-			context.Set("content-type", "application/json")
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
+			c.Header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
+			c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Cache-Control, Content-Language, Content-Type")
+			c.Header("Access-Control-Allow-Credentials", "false")
+			c.Set("content-type", "application/json")
 		}
-		context.Next()
+		c.Next()
 	}
 }
 
-// 日志中间件，使用zap日志
+// Logger 日志中间件，使用zap日志
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Start timer
@@ -56,21 +57,78 @@ func Logger() gin.HandlerFunc {
 
 }
 
-// Auth中间件，用于接口登陆认证
+// Authenticate 登陆认证中间件，用于接口登陆认证
 func Authenticate() gin.HandlerFunc {
-	return func(context *gin.Context) {
-		context.Next()
+	return func(c *gin.Context) {
+		c.Next()
 
 	}
 
 }
 
-// Auth中间件，用于接口的权限认证
+// Authorize 权限认证中间件，用于接口的权限认证
 func Authorize() gin.HandlerFunc {
-	return func(context *gin.Context) {
-		context.Next()
+	return func(c *gin.Context) {
+		c.Next()
 
 	}
 
 }
 
+// ParameterConvert 参数预处理中间件，用于参数前后空格的清除
+func ParameterConvert() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		method := c.Request.Method
+		contentType := c.Request.Header.Get("Content-Type")
+		contentLength := c.Request.Header.Get("Content-Length")
+
+		var err error
+		if method == "POST" || method == "PUT" || method == "DELETE" {
+			if contentType == "application/json" && len(contentLength) > 1 {
+				err = handlePostJson(c)
+			} else if contentType == "application/x-www-form-urlencoded" {
+				err = handlePostForm(c)
+			} else if strings.Contains(contentType, "multipart/form-data") {
+				err = handlePostMultiForm(c)
+			}
+		}
+
+		if method == "GET" {
+			err = handleRequestGet(c)
+		}
+
+		if err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+		}
+
+		c.Next()
+	}
+}
+
+
+func handleRequestGet(c *gin.Context) error {
+	params := c.Request.URL.Query()
+	for key, values := range params {
+		for _, item := range values {
+			v := strings.TrimSpace(item)
+			params.Set(key, v)
+		}
+	}
+	c.Request.URL.RawQuery = params.Encode()
+	return nil
+}
+
+func handlePostJson(c *gin.Context) error {
+	return nil
+
+}
+
+func handlePostForm(c *gin.Context) error {
+	return nil
+
+}
+
+func handlePostMultiForm(c *gin.Context) error {
+	return nil
+
+}
